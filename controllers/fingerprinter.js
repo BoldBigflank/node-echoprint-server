@@ -142,6 +142,8 @@ function bestMatchForQuery(fp, threshold, callback) {
     for (var i = 0; i < matches.length; i++) {
       var match = matches[i];
       match.ascore = getActualScore(fp, match, threshold, MATCH_SLOP);
+      // Get the match's timestamp
+
       if (match.ascore && match.ascore >= fp.codes.length * MIN_MATCH_PERCENT)
         newMatches.push(match);
     }
@@ -162,6 +164,7 @@ function bestMatchForQuery(fp, threshold, callback) {
         // Fetch metadata for the single match
         log.debug('Single good match with actual score ' + matches[0].ascore +
           '/' + fp.codes.length);
+        
         return getTrackMetadata(matches[0], matches,
           'SINGLE_GOOD_MATCH_HISTOGRAM_DECREASED', callback);
       } else {
@@ -214,6 +217,7 @@ function getTrackMetadata(match, allMatches, status, callback) {
     match.track = track.name;
     match.artist = track.artist_name;
     match.artist_id = track.artist_id;
+    match.riff_offset = track.riff_offset;
     match.length = track.length;
     match.import_date = track.import_date;
     
@@ -233,7 +237,6 @@ function getCodesToTimes(match, slop) {
   for (var i = 0; i < match.codes.length; i++) {
     var code = match.codes[i];
     var time = Math.floor(match.times[i] / slop) * slop;
-    
     if (codesToTimes[code] === undefined)
       codesToTimes[code] = [];
     codesToTimes[code].push(time);
@@ -261,9 +264,11 @@ function getActualScore(fp, match, threshold, slop) {
   for (i = 0; i < fp.codes.length; i++) {
     var code = fp.codes[i];
     var time = Math.floor(fp.times[i] / slop) * slop;
+    console.log("fp", code, time);
     var minDist = MAX_DIST;
 
     var matchTimes = matchCodesToTimes[code];
+    var timeDiff;
     if (matchTimes) {
       for (j = 0; j < matchTimes.length; j++) {
         var dist = Math.abs(time - matchTimes[j]);
@@ -272,12 +277,19 @@ function getActualScore(fp, match, threshold, slop) {
         if (timeDiffs[dist] === undefined)
           timeDiffs[dist] = 0;
         timeDiffs[dist]++;
+
+        // Find the most likely difference
+        if(!timeDiff || timeDiffs[dist] > timeDiffs[timeDiff]){
+          timeDiff = dist;
+        }
       }
     }
   }
-
-  match.histogram = timeDiffs;
   
+  match.histogram = timeDiffs;
+  match.timeDiff = timeDiff / SECONDS_TO_TIMESTAMP;
+  console.log("histogram", match.histogram);
+
   // Convert the histogram into an array, sort it, and sum the top two
   // frequencies to compute the adjusted score
   var keys = Object.keys(timeDiffs);
@@ -285,6 +297,7 @@ function getActualScore(fp, match, threshold, slop) {
   for (i = 0; i < keys.length; i++)
     array[i] = [ keys[i], timeDiffs[keys[i]] ];
   array.sort(function(a, b) { return b[1] - a[1]; });
+  
   
   if (array.length > 1)
     return array[0][1] + array[1][1];

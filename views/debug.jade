@@ -95,7 +95,7 @@ html(lang="en")
       function drawCodeMatchGraph(match, graphsTD) {
         var canvas = document.getElementsByName(match.track_id + '-lines')[0];
         var ctx = canvas.getContext('2d');
-        
+        console.log(match.histogram)
         // Find the most frequently occurring time offset in the histogram
         var topOffset = 0;
         var topOffsetCount = 0;
@@ -107,7 +107,7 @@ html(lang="en")
             }
           }
         }
-        
+        console.log(match.contributors)
         for (var i = 0; i < match.contributors.length; i++) {
           var contrib = match.contributors[i];
           var color = (contrib.dist == topOffset) ? 'blue' : 'red';
