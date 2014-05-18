@@ -9,10 +9,10 @@ var settings = {
   web_port: 37760,
   
   // Database settings
-  db_user: 'root',
-  db_pass: '',
+  db_user: 'echo',
+  db_pass: 'E842SrA3CR6B6nFt',
   db_database: 'echoprint',
-  db_host: 'localhost',
+  db_host: 'echoprint-server.ccw7gepbnf4c.us-east-1.rds.amazonaws.com',
   
   // Set this to a system username to drop root privileges
   run_as_user: '',
